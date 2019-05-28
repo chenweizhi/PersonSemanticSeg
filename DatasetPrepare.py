@@ -133,7 +133,7 @@ class SuperviselyPersonDatasetPrepare:
         # cv2.waitKey(0)
         # save png in index mode which is "p" mode
         png = Image.fromarray(image_zero)
-        png.putpalette(self._png_palette)
+        #png.putpalette(self._png_palette)
         base_output_name = os.path.basename(img_path)
         self.count += 1
         if self.count % 8 == 0:
@@ -165,7 +165,7 @@ if __name__ == "__main__":
 
     # pexels-photo-358010.png pexels-photo-237705
     dataset = SuperviselyPersonDatasetPrepare("G:\\imageDatasets\\Supervisely Person Dataset\\",
-                                              "G:\\imageDatasets\\Supervisely Person Dataset\\outputs\\")
+                                              "G:\\imageDatasets\\Supervisely Person Dataset\\dataset\\")
 
     dataset.generate_index_png()
 

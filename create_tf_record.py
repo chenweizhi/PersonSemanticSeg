@@ -1,4 +1,6 @@
-"""Converts PASCAL dataset to TFRecords file format."""
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 
 from __future__ import absolute_import
 from __future__ import division
@@ -17,13 +19,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--data_dir', type=str, default='G:\\imageDatasets\\VOCROOT\\VOC2012',
                     help='Path to the directory containing the PASCAL VOC data.')
 
-parser.add_argument('--output_path', type=str, default='./dataset',
+parser.add_argument('--output_path', type=str, default='./datasets',
                     help='Path to the directory to create TFRecords outputs.')
 
-parser.add_argument('--train_data_dir', type=str, default='G:\\imageDatasets\\Supervisely Person Dataset\\outputs\\train\\',
+parser.add_argument('--train_data_dir', type=str, default='G:\\imageDatasets\\Supervisely Person Dataset\\dataset\\train\\',
                     help='Path to the file listing the training data.')
 
-parser.add_argument('--valid_data_dir', type=str, default='G:\\imageDatasets\\Supervisely Person Dataset\\outputs\\val\\',
+parser.add_argument('--valid_data_dir', type=str, default='G:\\imageDatasets\\Supervisely Person Dataset\\dataset\\val\\',
                     help='Path to the file listing the validation data.')
 
 parser.add_argument('--image_data_dir', type=str, default='img',
