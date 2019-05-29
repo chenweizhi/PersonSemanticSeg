@@ -10,7 +10,7 @@ import PIL
 
 class Dataset(object):
 
-    def __init__(self, is_training, data_dir):
+    def __init__(self, is_training, data_dir, batch_size, should_shuffle=False):
         self._MIN_SCALE = 0.5
         self._MAX_SCALE = 2.0
         self._HEIGHT = 513
@@ -20,8 +20,8 @@ class Dataset(object):
         self.data_dir = data_dir
         self.num_readers = 2
         self.should_repeat = False
-        self.should_shuffle = False
-        self.batch_size = 1
+        self.should_shuffle = should_shuffle
+        self.batch_size = batch_size
 
     def _parse_record(self, raw_record):
         """Parse PASCAL image and label from a tf record."""
@@ -46,15 +46,12 @@ class Dataset(object):
         # width = tf.cast(parsed['image/width'], tf.int32)
 
         image = tf.image.decode_image(
-            (parsed['image/encoded']), 3) # 3 means channels is three
+            tf.reshape(parsed['image/encoded'], shape=[]), 3)
         image = tf.to_float(tf.image.convert_image_dtype(image, dtype=tf.uint8))
         image.set_shape([None, None, 3])
 
-        #label = tf.map_fn(lambda pngdata: PIL.Image.open(io.BytesIO(pngdata)), parsed['label/encoded'])
-        # encoded_label_io =
-        # label = PIL.Image.open(io.BytesIO())
-
-        label = tf.image.decode_png((parsed['label/encoded']))
+        label = tf.image.decode_image(
+            tf.reshape(parsed['label/encoded'], shape=[]), 1)
         label = tf.to_int32(tf.image.convert_image_dtype(label, dtype=tf.uint8))
         label.set_shape([None, None, 1])
 
@@ -120,6 +117,7 @@ class Dataset(object):
             dataset = dataset.repeat(1)
 
         dataset = dataset.batch(self.batch_size).prefetch(self.batch_size)
+
         return dataset.make_one_shot_iterator()
 
 
