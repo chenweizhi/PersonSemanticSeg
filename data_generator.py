@@ -10,7 +10,7 @@ import PIL
 
 class Dataset(object):
 
-    def __init__(self, is_training, data_dir, batch_size, should_shuffle=False):
+    def __init__(self, is_training, data_dir, batch_size, should_shuffle=False, should_repeat=False):
         self._MIN_SCALE = 0.5
         self._MAX_SCALE = 2.0
         self._HEIGHT = 513
@@ -19,7 +19,7 @@ class Dataset(object):
         self.is_training = is_training
         self.data_dir = data_dir
         self.num_readers = 2
-        self.should_repeat = False
+        self.should_repeat = should_repeat
         self.should_shuffle = should_shuffle
         self.batch_size = batch_size
 

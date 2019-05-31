@@ -48,7 +48,7 @@ parser.add_argument('--learning_rate_policy', type=str, default='poly',
                     choices=['poly', 'piecewise'],
                     help='Learning rate policy to optimize loss.')
 
-parser.add_argument('--max_iter', type=int, default=30000,
+parser.add_argument('--max_iter', type=int, default=40000,
                     help='Number of maximum iteration used for "poly" learning rate policy.')
 
 parser.add_argument('--data_dir', type=str, default='./datasets/',
@@ -102,9 +102,10 @@ _NUM_IMAGES = {
     'validation': 401,
 }
 
-def input_fn(is_training, data_dir, batch_size):
+def input_fn(is_training, data_dir, batch_size, should_repeat=False):
 
-    dataset = data_generator.Dataset(is_training=is_training, data_dir=data_dir, batch_size=batch_size)
+    dataset = data_generator.Dataset(is_training=is_training, data_dir=data_dir,
+                                     batch_size=batch_size, should_repeat=should_repeat)
 
     iter = dataset.get_one_shot_iterator()
 
@@ -112,114 +113,6 @@ def input_fn(is_training, data_dir, batch_size):
 
     return image, label
 
-
-# def get_filenames(is_training, data_dir):
-#   """Return a list of filenames.
-#
-#   Args:
-#     is_training: A boolean denoting whether the input is for training.
-#     data_dir: path to the the directory containing the input data.
-#
-#   Returns:
-#     A list of file names.
-#   """
-#   if is_training:
-#     return [os.path.join(data_dir, 'voc_train.record')]
-#   else:
-#     return [os.path.join(data_dir, 'voc_val.record')]
-#
-# def parse_record(raw_record):
-#   """Parse PASCAL image and label from a tf record."""
-#   keys_to_features = {
-#       'image/height':
-#       tf.FixedLenFeature((), tf.int64),
-#       'image/width':
-#       tf.FixedLenFeature((), tf.int64),
-#       'image/encoded':
-#       tf.FixedLenFeature((), tf.string, default_value=''),
-#       'image/format':
-#       tf.FixedLenFeature((), tf.string, default_value='png'),
-#       'label/encoded':
-#       tf.FixedLenFeature((), tf.string, default_value=''),
-#       'label/format':
-#       tf.FixedLenFeature((), tf.string, default_value='png'),
-#   }
-#
-#   parsed = tf.parse_single_example(raw_record, keys_to_features)
-#
-#   # height = tf.cast(parsed['image/height'], tf.int32)
-#   # width = tf.cast(parsed['image/width'], tf.int32)
-#
-#   image = tf.image.decode_image(
-#       tf.reshape(parsed['image/encoded'], shape=[]), _DEPTH)
-#   image = tf.to_float(tf.image.convert_image_dtype(image, dtype=tf.uint8))
-#   image.set_shape([None, None, 3])
-#
-#   label = tf.image.decode_image(
-#       tf.reshape(parsed['label/encoded'], shape=[]), 1)
-#   label = tf.to_int32(tf.image.convert_image_dtype(label, dtype=tf.uint8))
-#   label.set_shape([None, None, 1])
-#
-#   return image, label
-#
-#
-# def preprocess_image(image, label, is_training):
-#   """Preprocess a single image of layout [height, width, depth]."""
-#   if is_training:
-#     # Randomly scale the image and label.
-#     image, label = preprocessing.random_rescale_image_and_label(
-#         image, label, _MIN_SCALE, _MAX_SCALE)
-#
-#     # Randomly crop or pad a [_HEIGHT, _WIDTH] section of the image and label.
-#     image, label = preprocessing.random_crop_or_pad_image_and_label(
-#         image, label, _HEIGHT, _WIDTH, _IGNORE_LABEL)
-#
-#     # Randomly flip the image and label horizontally.
-#     image, label = preprocessing.random_flip_left_right_image_and_label(
-#         image, label)
-#
-#     image.set_shape([_HEIGHT, _WIDTH, 3])
-#     label.set_shape([_HEIGHT, _WIDTH, 1])
-#
-#   image = preprocessing.mean_image_subtraction(image)
-#
-#   return image, label
-#
-# def input_fn(is_training, data_dir, batch_size, num_epochs=1):
-#   """Input_fn using the tf.data input pipeline for CIFAR-10 dataset.
-#
-#   Args:
-#     is_training: A boolean denoting whether the input is for training.
-#     data_dir: The directory containing the input data.
-#     batch_size: The number of samples per batch.
-#     num_epochs: The number of epochs to repeat the dataset.
-#
-#   Returns:
-#     A tuple of images and labels.
-#   """
-#   dataset = tf.data.Dataset.from_tensor_slices(get_filenames(is_training, data_dir))
-#   dataset = dataset.flat_map(tf.data.TFRecordDataset)
-#
-#   if is_training:
-#     # When choosing shuffle buffer sizes, larger sizes result in better
-#     # randomness, while smaller sizes have better performance.
-#     # is a relatively small dataset, we choose to shuffle the full epoch.
-#     dataset = dataset.shuffle(buffer_size=_NUM_IMAGES['train'])
-#
-#   dataset = dataset.map(parse_record)
-#   dataset = dataset.map(
-#       lambda image, label: preprocess_image(image, label, is_training))
-#   dataset = dataset.prefetch(batch_size)
-#
-#   # We call repeat after shuffling, rather than before, to prevent separate
-#   # epochs from blending together.
-#   dataset = dataset.repeat(num_epochs)
-#   dataset = dataset.batch(batch_size)
-#
-#   iterator = dataset.make_one_shot_iterator()
-#   images, labels = iterator.get_next()
-#
-#   return images, labels
 
 def main(unused_argv):
 
@@ -231,7 +124,9 @@ def main(unused_argv):
         shutil.rmtree(FLAGS.model_dir, ignore_errors=True)
 
     # Set up a RunConfig to only save checkpoints once per training cycle.
-    run_config = tf.estimator.RunConfig().replace(save_checkpoints_secs=1e9)
+    # save checkpoint in every 3 minute
+    run_config = tf.estimator.RunConfig().replace(save_checkpoints_secs=1e9).replace(save_checkpoints_secs=300)
+
     model = tf.estimator.Estimator(
         model_fn=deeplab_model.deeplabv3_plus_model_fn,
         model_dir=FLAGS.model_dir,
@@ -274,12 +169,13 @@ def main(unused_argv):
             train_hooks.append(debug_hook)
             eval_hooks = [debug_hook]
 
-        # tf.logging.info("Start training.")
-        # model.train(
-        #     input_fn=lambda: input_fn(True, FLAGS.data_dir, FLAGS.batch_size),
-        #     hooks=train_hooks,
-        #     # steps=1  # For debug
-        # )
+        tf.logging.info("Start training.")
+        model.train(
+            input_fn=lambda: input_fn(True, FLAGS.data_dir, FLAGS.batch_size, should_repeat=True),
+            hooks=train_hooks,
+            max_steps=FLAGS.max_iter,
+            # steps=1  # For debug
+        )
 
         tf.logging.info("Start evaluation.")
         # Evaluate the model and print results
