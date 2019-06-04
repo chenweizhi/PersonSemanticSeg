@@ -11,8 +11,8 @@ import sys
 import tensorflow as tf
 
 import deeplab_model
-from utils import preprocessing
-from utils import dataset_util
+import preprocessing
+#from utils import dataset_util
 
 from PIL import Image
 import matplotlib.pyplot as plt
@@ -21,7 +21,7 @@ from tensorflow.python import debug as tf_debug
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--data_dir', type=str, default='G:\\imageDatasets\\Supervisely Person Dataset\\ds12\\img',
+parser.add_argument('--data_dir', type=str, default='G:\\imageDatasets\\Supervisely Person Dataset\\outputs\\val\\img',
                     help='The directory containing the image data.')
 
 parser.add_argument('--output_dir', type=str, default='G:\\imageDatasets\\Supervisely Person Dataset\\outputs',
@@ -46,7 +46,7 @@ parser.add_argument('--output_stride', type=int, default=16,
 parser.add_argument('--debug', action='store_true',
                     help='Whether to use debugger to track down bad values during training.')
 
-_NUM_CLASSES = 21
+_NUM_CLASSES = 2
 
 
 def main(unused_argv):
@@ -70,7 +70,12 @@ def main(unused_argv):
           'num_classes': _NUM_CLASSES,
       })
 
-  examples = dataset_util.read_examples_list(FLAGS.infer_data_list)
+  #examples = dataset_util.read_examples_list(FLAGS.infer_data_list)
+  with tf.gfile.GFile(FLAGS.infer_data_list) as fid:
+    lines = fid.readlines()
+  examples = [line.strip().split(' ')[0] for line in lines]
+
+
   image_files = [os.path.join(FLAGS.data_dir, filename) for filename in examples]
 
   predictions = model.predict(
